@@ -1,5 +1,5 @@
 'use strict';
-const CACHE='meu-ritmo-shell-v1';
+const CACHE='meu-ritmo-shell-v2';
 const SHELL=['./','index.html','app.js','cloud.js','cloud-config.js','pwa.js','manifest.webmanifest','vendor/supabase-2.118.0.js','assets/meu-ritmo-logo.png','assets/app-icon.svg'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)));});
 // Updates activate on next visit after all existing app tabs have been closed.
