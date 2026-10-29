@@ -1,10 +1,19 @@
 'use strict';
 (() => {
  const el=id=>document.getElementById(id), config=window.MEU_RITMO_CLOUD||{};
- let session=null, revision=0, busy=false, loaded=false, dirty=false, activeKey='meu-ritmo-v1';
- const status=(text,kind='info')=>{el('cloud-status').textContent=text;el('cloud-status').dataset.kind=kind;};
+ let session=null, revision=0, busy=false, loaded=false, dirty=false, activeKey='meu-ritmo-v1', authMode='login', localMode=false;
+ const status=(text,kind='info')=>{el('cloud-status').textContent=text;el('cloud-status').dataset.kind=kind;el('auth-status').textContent=text;el('auth-status').dataset.kind=kind;};
  const configured=/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(config.url)&&!!config.publicKey;
+ function screen(){const app=!!session||localMode;el('app-screen').hidden=!app;el('auth-screen').hidden=app;el('open-login').hidden=!!session;}
+ function mode(value){authMode=value;for(const id of ['login','signup'])el('auth-'+id).setAttribute('aria-pressed',String(value===id));el('auth-title').textContent=value==='signup'?'Comece seu novo ritmo.':'Bom ter você de volta.';el('auth-description').textContent=value==='signup'?'Crie sua conta para guardar tarefas e notas e acessar de outros dispositivos.':'Entre com seu e-mail para acessar suas tarefas e notas.';el('send-code').textContent=value==='signup'?'Criar conta por e-mail':'Entrar por e-mail';status('Enviaremos um link seguro para seu e-mail. Sem senha para lembrar.');}
+ el('auth-login').onclick=()=>mode('login');el('auth-signup').onclick=()=>mode('signup');
+ el('auth-form').onsubmit=e=>{e.preventDefault();el('send-code').click();};
+ el('send-code').type='button';
+ el('try-local').onclick=()=>{if(busy)return;localMode=true;screen();status('Modo local ativo. Entre para sincronizar.');};
+ el('open-login').onclick=()=>{localMode=false;screen();mode('login');el('email').focus();};
  function controls(){
+ screen();for(const id of ['auth-login','auth-signup','try-local'])el(id).disabled=busy;
+
  el('account-state').textContent=session?'● Conectado · '+session.user.email:'○ Modo local · Desconectado';
  el('account-state').dataset.connected=String(!!session);
  el('cloud-help').textContent=session?(loaded?'Alterações ficam locais até você clicar em Salvar na nuvem.':'Conectado, mas os dados ainda não carregaram. Tente Carregar nuvem.'):'Entre pelo link recebido no e-mail para habilitar os botões abaixo. Use a aba aberta pelo link; a sessão termina ao recarregar.';
@@ -27,14 +36,15 @@
  }
  function show(data){state={tasks:data.tasks.map(t=>({...t})),notes:data.notes};render();el('notes').value=state.notes;}
  async function load(){const t=await token();const rows=await request('/rest/v1/user_data?select=payload,revision&user_id=eq.'+encodeURIComponent(session.user.id),undefined,t);if(!Array.isArray(rows))throw Error('Resposta inesperada do banco.');let data={tasks:[],notes:''};if(rows.length){if(!valid(rows[0].payload))throw Error('Dados incompatíveis. A cópia local foi preservada.');data=rows[0].payload;revision=rows[0].revision;}else revision=0;show(data);loaded=true;dirty=false;localWrite();status('✓ Dados carregados da nuvem. '+session.user.email,'success');}
- el('send-code').onclick=()=>run(async()=>{if(!el('email').reportValidity())return;await request('/auth/v1/otp?redirect_to='+encodeURIComponent(location.origin+location.pathname),{email:el('email').value.trim(),create_user:true});status('Link solicitado! Você ainda não está conectado. Abra o link recebido no e-mail para entrar. Confira também o spam.','success');},'send-code','Enviando link…');
+ el('send-code').onclick=()=>run(async()=>{if(!el('email').reportValidity())return;await request('/auth/v1/otp?redirect_to='+encodeURIComponent(location.origin+location.pathname),{email:el('email').value.trim(),create_user:authMode==='signup'});status('Link solicitado! Você ainda não está conectado. Abra o link recebido no e-mail para entrar. Confira também o spam.','success');},'send-code','Enviando link…');
  el('verify').onclick=()=>run(async()=>{const code=el('code').value.trim();if(!/^\d{6,10}$/.test(code))throw Error('Digite o código numérico recebido no e-mail.');const result=await request('/auth/v1/verify',{email:el('email').value.trim(),token:code,type:'email'});if(!result.access_token||!result.user)throw Error('Não foi possível entrar.');session={...result,expires_at:Date.now()/1000+result.expires_in};activeKey='meu-ritmo-cloud-'+session.user.id;el('code').value='';show({tasks:[],notes:''});status('Conectado. Carregando dados…');try{await load();}catch(e){show({tasks:[],notes:''});throw e;}});
  el('cloud-save').onclick=()=>run(async()=>{const snapshot=JSON.parse(JSON.stringify(state));const t=await token();const next=await request('/rest/v1/rpc/save_my_data',{document:snapshot,expected_revision:revision},t);if(!Number.isInteger(next)||next<1)throw Error('O banco não confirmou o salvamento. Tente carregar a nuvem antes de salvar novamente.');revision=next;dirty=JSON.stringify(state)!==JSON.stringify(snapshot);el('cloud-save').classList.add('saved');status(dirty?'Cópia salva. Há novas alterações locais; salve novamente.':'✓ Dados salvos na nuvem às '+new Intl.DateTimeFormat('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date())+'.','success');},'cloud-save','Salvando na nuvem…');
  el('cloud-load').onclick=()=>run(async()=>{if(dirty&&!confirm('Carregar a nuvem substituirá as alterações locais. Exporte uma cópia antes, se precisar. Continuar?'))return;await load();},'cloud-load','Carregando nuvem…');
  el('local-import').onclick=()=>{try{const old=JSON.parse(localStorage.getItem('meu-ritmo-v1')||'null');if(!valid(old))throw Error();if(!confirm('Substituir a tela atual pelos seus dados do modo local? Depois clique em Salvar na nuvem.'))return;show(old);save();}catch{status('Não há dados locais válidos neste navegador. Você também pode importar um backup JSON.');}};
- el('logout').onclick=()=>run(async()=>{if(dirty&&!confirm('Há alterações sem enviar à nuvem. Exporte uma cópia ou salve antes de sair. Sair mesmo assim?'))return;try{await request('/auth/v1/logout',{},await token());}finally{session=null;loaded=false;dirty=false;revision=0;activeKey='meu-ritmo-v1';let old;try{old=JSON.parse(localStorage.getItem(activeKey));}catch{}show(valid(old)?old:{tasks:[],notes:''});status('Você saiu. Modo local ativo.');}},'logout','Saindo…');
+ el('logout').onclick=()=>run(async()=>{if(dirty&&!confirm('Há alterações sem enviar à nuvem. Exporte uma cópia ou salve antes de sair. Sair mesmo assim?'))return;try{await request('/auth/v1/logout',{},await token());}finally{session=null;localMode=false;loaded=false;dirty=false;revision=0;activeKey='meu-ritmo-v1';let old;try{old=JSON.parse(localStorage.getItem(activeKey));}catch{}show(valid(old)?old:{tasks:[],notes:''});status('Você saiu com segurança. Entre novamente quando quiser.');}},'logout','Saindo…');
  window.addEventListener('beforeunload',e=>{if(session&&dirty){e.preventDefault();e.returnValue='';}});
- if(!configured){el('cloud-fields').hidden=true;status('Modo local ativo. A sincronização estará disponível após configurar o Supabase.');}else{status('Entre por e-mail para sincronizar. Sua sessão termina ao recarregar esta página.');controls();}
+ mode('login');
+ if(!configured){el('cloud-fields').hidden=true;el('send-code').disabled=true;status('Modo local ativo. A sincronização estará disponível após configurar o Supabase.');}else{status('Entre por e-mail para sincronizar. Sua sessão termina ao recarregar esta página.');controls();}
  // O link padrão do Supabase retorna tokens no fragmento, que não é enviado ao servidor.
  const callback=new URLSearchParams(location.hash.slice(1));
  if(callback.has('access_token')||callback.has('error')){

@@ -8,6 +8,10 @@ Site: https://stefanogalani.github.io/meu-ritmo/
 
 No modo local, abra index.html no navegador. Tarefas e notas ficam neste navegador; use Exportar dados para backups. Dados locais não sincronizam automaticamente.
 
+## Tela inicial
+
+Escolha **Entrar** para uma conta existente ou **Criar conta** no primeiro acesso. Ambos usam um link enviado por e-mail, sem senha. A opção **Usar sem conta** abre o modo local. Ao sair, o app retorna à tela de acesso. A sessão não persiste após recarregar.
+
 ## Login e banco de dados
 
 A integração opcional com Supabase permite login por código de e-mail e sincronização manual de tarefas/notas entre dispositivos, com detecção de conflito e histórico de salvamentos no banco.
