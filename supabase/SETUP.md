@@ -12,7 +12,7 @@ O site continua funcionando no modo local até concluir estas etapas. Não é ne
 
 ## Funcionamento e limites
 
-- A sessão fica somente na memória e termina para o app ao recarregar/fechar a página. Não há tokens de acesso no localStorage. Solicite outro link para reentrar para retomar a sincronização.
+- O SDK oficial Supabase mantém a sessão no armazenamento local deste navegador e renova o acesso automaticamente. Atualizar ou reabrir a página recupera a sessão e carrega os dados da nuvem. Sair remove a sessão neste navegador; limpar o armazenamento, expiração/revogação pelo servidor ou navegação anônima também podem exigir novo login. Em dispositivos compartilhados, saia ao terminar.
 - Alterações são guardadas também em um cache local separado por usuário, mas a nuvem só muda com **Salvar na nuvem**. O carregamento ao entrar usa os dados da nuvem. Para recuperar mudanças não enviadas de um cache, exporte antes de sair/recarregar. Dados locais são texto simples e ficam acessíveis a quem usar o mesmo perfil do navegador; este app não é um cofre criptografado.
 - **Carregar nuvem** atualiza a tela; se houver alterações, pede confirmação. Em conflito de revisão, exporte sua cópia local antes de carregar a versão remota; não há mesclagem automática.
 - Não há sincronização automática de sessões do cronômetro nesta versão. Tarefas e notas são armazenadas juntas em um documento por conta. Os registros de salvamento são criados pelo banco, não pelo cliente.
