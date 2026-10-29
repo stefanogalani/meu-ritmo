@@ -22,7 +22,33 @@
  function localWrite(){try{localStorage.setItem(activeKey,JSON.stringify(state));return true;}catch{status('Não foi possível guardar a cópia local. Exporte um backup.');return false;}}
  // O modo conectado usa um cache separado por usuário; o conteúdo local antigo é preservado.
  save=()=>{dirty=true;if(!busy){el('cloud-save').textContent='Salvar na nuvem';el('cloud-save').classList.remove('saved','failed');}const ok=localWrite();if(session)status('Alterações neste navegador. Clique em Salvar na nuvem para sincronizar.');return ok;};
- async function request(path,body,token){const response=await fetch(config.url+path,{signal:AbortSignal.timeout(20000),method:body===undefined?'GET':'POST',headers:{apikey:config.publicKey,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})});const data=await response.json().catch(()=>null);if(!response.ok)throw new Error(response.status===401?'Sessão expirada. Saia e entre novamente.':response.status===409?'Conflito: outra sessão salvou primeiro. Exporte sua cópia antes de carregar a nuvem.':'Operação recusada. Confira o código, a conexão e a configuração do Supabase.');return data;}
+ async function request(path,body,token){const response=await fetch(config.url+path,{signal:AbortSignal.timeout(20000),method:body===undefined?'GET':'POST',headers:{apikey:config.publicKey,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})});const data=await response.json().catch(()=>null);if(!response.ok){
+ const code=typeof data?.code==='string'?data.code:typeof data?.error_code==='string'?data.error_code:'';
+ const messages={
+ over_email_send_rate_limit:'O Supabase atingiu o limite de envio de e-mails. Aguarde antes de solicitar outro link. Se continuar, confira os limites de e-mail no painel do projeto.',
+ over_request_rate_limit:'Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.',
+ email_address_not_authorized:'O serviço de e-mail do Supabase não autorizou esse destinatário. Use o e-mail de um membro da organização ou configure SMTP próprio no projeto.',
+ email_not_confirmed:'Seu e-mail ainda não foi confirmado. Use Criar conta para solicitar um novo link e conclua o acesso pelo e-mail.',
+ user_not_found:'Não foi possível entrar nessa conta. Se for seu primeiro acesso, escolha Criar conta.',
+ signups_not_allowed:'O Supabase não permitiu criar ou localizar a conta para este acesso. Confira o endereço de e-mail; no primeiro acesso, escolha Criar conta. Se persistir, confira se novos cadastros estão habilitados no projeto.',
+ signup_disabled:'Novos cadastros estão desabilitados no Supabase. Habilite-os em Authentication → Sign In / Providers para criar sua conta.',
+ email_provider_disabled:'O login por e-mail está desabilitado. Ative Email em Authentication → Sign In / Providers.',
+ otp_disabled:'O acesso por link de e-mail está desabilitado no projeto Supabase.',
+ otp_expired:'O link expirou ou já foi utilizado. Solicite outro e abra o e-mail mais recente.',
+ email_address_invalid:'Confira o endereço de e-mail informado.',
+ unexpected_failure:'O Supabase não conseguiu concluir a operação. Confira Authentication → Logs no painel do projeto.'
+ };
+ let message=messages[code];
+ if(!message&&response.status===429)message='Limite de tentativas ou de envio de e-mails atingido. Aguarde antes de tentar novamente.';
+ if(!message&&response.status===401)message=path.startsWith('/auth/v1/otp')?'O Supabase recusou a configuração de acesso. Confira a URL do projeto e a chave pública.':'Sessão expirada. Saia e entre novamente.';
+ if(!message&&response.status===409)message='Conflito: outra sessão salvou primeiro. Exporte sua cópia antes de carregar a nuvem.';
+ // O provedor antigo pode enviar somente msg, sem um código de erro.
+ const providerMessage=typeof data?.msg==='string'?data.msg:typeof data?.message==='string'?data.message:'';
+ if(!message&&/email address not authorized|only send.*(?:team|organization)|unauthorized.*email/i.test(providerMessage))message=messages.email_address_not_authorized;
+ if(!message&&/signups not allowed|user not found/i.test(providerMessage))message=messages.signups_not_allowed;
+ const reference=/^[a-z0-9_]{1,80}$/i.test(code)?'; '+code:'';
+ throw new Error((message||'O Supabase recusou a operação. Consulte Authentication → Logs no painel do projeto e informe o código abaixo.')+' (HTTP '+response.status+reference+')');
+ }return data;}
  async function token(){if(!session)throw Error('Entre na sua conta.');if(Date.now()/1000>=session.expires_at-60){const fresh=await request('/auth/v1/token?grant_type=refresh_token',{refresh_token:session.refresh_token});session={...fresh,expires_at:Date.now()/1000+fresh.expires_in};}return session.access_token;}
  async function run(fn,id,working='Processando…'){
  if(busy)return;
