@@ -50,7 +50,7 @@ Tarefas aceitam prazo e prioridade (alta, normal ou baixa). Use Editar para ajus
 
 ## Histórico de foco
 
-Ciclos de foco de 25 minutos concluídos geram um registro, com data e duração, no campo `sessions` do mesmo documento protegido por RLS. Pausas e ciclos reiniciados não contam. O painel resume hoje e os últimos sete dias e lista as dez últimas sessões; são mantidas até 5.000 sessões. A sessão em andamento é retomada após recarregar a mesma aba, separadamente por conta, e uma conclusão é registrada uma única vez nessa aba. Abas/dispositivos continuam sujeitos à resolução de conflitos descrita acima.
+Ciclos de foco de 15, 25 ou 50 minutos concluídos geram um registro, com data e duração, no campo `sessions` do mesmo documento protegido por RLS. Pausas e ciclos reiniciados não contam. O painel resume hoje e os últimos sete dias e lista as dez últimas sessões; são mantidas até 5.000 sessões. A sessão em andamento é retomada após recarregar a mesma aba, separadamente por conta, e uma conclusão é registrada uma única vez nessa aba. Abas/dispositivos continuam sujeitos à resolução de conflitos descrita acima.
 
 Backups antigos continuam válidos: tarefas antigas recebem prioridade normal e nenhum prazo. Backups novos incluem histórico, prioridades e datas. Não há migração SQL necessária no schema atual.
 
@@ -123,8 +123,22 @@ Teste: `NODE_PATH=/tmp/meu-ritmo-tests/node_modules node tests/trash-repeat.cjs`
 
 ## Atualização sem mistura de versões
 
-Os scripts app.js, cloud.js e pwa.js usam o parâmetro de versão `?v=7` no HTML e são precacheados com a mesma URL no service worker. Sempre que modificar arquivos do shell, atualize também esse identificador de versão nos scripts do HTML e na lista SHELL de sw.js, junto da versão CACHE. Isso evita que HTML novo use JavaScript antigo de outro cache.
+Os scripts preferences.js, app.js, cloud.js e pwa.js usam o parâmetro de versão `?v=8` no HTML e são precacheados com a mesma URL no service worker. Sempre que modificar arquivos do shell, atualize também esse identificador de versão nos scripts do HTML e na lista SHELL de sw.js, junto da versão CACHE. Isso evita que HTML novo use JavaScript antigo de outro cache.
 
 **Verificar atualização** mostra progresso imediatamente, bloqueia cliques repetidos e encerra a espera após 12 segundos quando o navegador/rede não responde. A ativação continua exigindo ação explícita e ausência de alterações pendentes. Abas com uma versão já ativada em outra aba também podem recarregar com segurança. O parâmetro temporário `atualizar` é removido ao aplicar a atualização, mantendo a navegação normal compatível com o cache offline.
 
 Teste de migração real de cache: `NODE_PATH=/tmp/meu-ritmo-tests/node_modules node tests/update.cjs`. Esse teste inicia seu próprio servidor temporário na porta 8767 e não usa contas reais.
+
+## Tema e preferências do cronômetro
+
+O botão **Tema** alterna entre Automático (acompanha o sistema), Claro e Escuro. A escolha fica neste navegador, separada dos dados da conta. O tema é aplicado no início do carregamento para reduzir o flash claro.
+
+No cronômetro, escolha foco de **15, 25 ou 50 minutos** e pausa de **5, 10 ou 15 minutos**. A duração é guardada neste navegador, inclusive para o botão Focar de uma tarefa. Controles de duração ficam bloqueados durante um ciclo ativo ou pausado; reinicie para trocar. A atualização de preferências em outra aba não altera o ciclo em andamento. Pausas não geram registros de foco, mesmo quando têm a mesma duração de um foco. Ciclos antigos de 25/5 minutos continuam sendo recuperados.
+
+## Revisão semanal
+
+A revisão usa semanas de segunda a domingo no fuso local do navegador. Navegue entre semanas e exporte um resumo em texto. Conclusões novas registram completedAt nas tarefas e sincronizam no documento existente, sem migração SQL. Tarefas concluídas na lixeira também contam; reabrir remove sua conclusão atual, restaurar preserva a data, e excluir definitivamente remove esse registro das estatísticas. Os totais não são um registro de auditoria imutável.
+
+Tarefas antigas concluídas sem data não recebem uma data estimada. Sessões de foco antigas continuam contando pelas datas já registradas. A lista de pendências representa tarefas ainda abertas agora, sem prazo ou com prazo até a semana consultada; não tenta reconstruir um estado histórico que o app não registrou. O painel mostra até dez itens por lista; a exportação inclui todos os itens do período.
+
+Teste: `NODE_PATH=/tmp/meu-ritmo-tests/node_modules node tests/comfort.cjs` (com o servidor local na porta 8765).
