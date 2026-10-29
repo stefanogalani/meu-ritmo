@@ -12,6 +12,10 @@ No modo local, abra index.html no navegador. Tarefas e notas ficam neste navegad
 
 Escolha **Entrar** para uma conta existente ou **Criar conta** no primeiro acesso. Ambos usam um link enviado por e-mail, sem senha. A opção **Usar sem conta** abre o modo local. Ao sair, o app retorna à tela de acesso. A sessão é mantida neste navegador após atualizar ou reabrir o app. Em um dispositivo compartilhado, clique em Sair ao terminar.
 
+## Login com Google
+
+Use **Continuar com Google** para entrar/criar conta sem envio de e-mails. Configure o provedor seguindo [supabase/GOOGLE.md](supabase/GOOGLE.md). Client Secret deve ficar somente no Supabase.
+
 ## Login e banco de dados
 
 A integração opcional com Supabase permite login por link de e-mail e sincronização manual de tarefas/notas entre dispositivos, com detecção de conflito e histórico de salvamentos no banco.

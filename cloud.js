@@ -6,14 +6,14 @@
  const configured=/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(config.url)&&!!config.publicKey;
  const client=configured&&window.supabase?window.supabase.createClient(config.url,config.publicKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}}):null;
  function screen(){const app=!!session||localMode;el('app-screen').hidden=!app;el('auth-screen').hidden=app;el('open-login').hidden=!!session;}
- function mode(value){authMode=value;for(const id of ['login','signup'])el('auth-'+id).setAttribute('aria-pressed',String(value===id));el('auth-title').textContent=value==='signup'?'Comece seu novo ritmo.':'Bom ter você de volta.';el('auth-description').textContent=value==='signup'?'Crie sua conta para guardar tarefas e notas e acessar de outros dispositivos.':'Entre com seu e-mail para acessar suas tarefas e notas.';el('send-code').textContent=value==='signup'?'Criar conta por e-mail':'Entrar por e-mail';status('Enviaremos um link seguro para seu e-mail. Sem senha para lembrar.');}
+ function mode(value){authMode=value;for(const id of ['login','signup'])el('auth-'+id).setAttribute('aria-pressed',String(value===id));el('auth-title').textContent=value==='signup'?'Comece seu novo ritmo.':'Bom ter você de volta.';el('auth-description').textContent=value==='signup'?'Escolha Google ou e-mail para criar sua conta e levar seus dados com você.':'Escolha como entrar para acessar suas tarefas e notas.';el('send-code').textContent=value==='signup'?'Criar conta por e-mail':'Entrar por e-mail';status('Enviaremos um link seguro para seu e-mail. Sem senha para lembrar.');}
  el('auth-login').onclick=()=>mode('login');el('auth-signup').onclick=()=>mode('signup');
  el('auth-form').onsubmit=e=>{e.preventDefault();el('send-code').click();};
  el('send-code').type='button';
  el('try-local').onclick=()=>{if(busy)return;localMode=true;screen();status('Modo local ativo. Entre para sincronizar.');};
  el('open-login').onclick=()=>{localMode=false;screen();mode('login');el('email').focus();};
  function controls(){
- screen();for(const id of ['auth-login','auth-signup','try-local'])el(id).disabled=busy;
+ screen();el('google-login').disabled=busy||!client||!!session;for(const id of ['auth-login','auth-signup','try-local'])el(id).disabled=busy;
 
  el('account-state').textContent=session?'● Conectado · '+session.user.email:'○ Modo local · Desconectado';
  el('account-state').dataset.connected=String(!!session);
@@ -59,10 +59,20 @@
  if(button){button.textContent=working;button.classList.remove('saved','failed');button.classList.add('is-loading');button.setAttribute('aria-busy','true');}
  status(working,'loading');
  try{await fn();}catch(e){status(e.name==='TimeoutError'?'O serviço demorou para responder. O salvamento não foi confirmado; tente carregar a nuvem antes de reenviar.':e.message==='Failed to fetch'?'Sem conexão com o serviço. Nada foi confirmado na nuvem. Verifique sua internet e tente novamente.':e.message,'error');if(button){button.classList.add('failed');button.textContent=id==='cloud-save'?'Falha · Tentar salvar':id==='send-code'?'Tentar enviar novamente':'Tentar novamente';}}
- finally{busy=false;controls();if(button){button.classList.remove('is-loading');button.removeAttribute('aria-busy');if(!button.classList.contains('failed'))button.textContent=id==='cloud-save'?(dirty?'Salvar novas alterações':'✓ Salvo na nuvem'):id==='send-code'?'Reenviar link':id==='cloud-load'?'Carregar nuvem':'Sair';}}
+ finally{busy=false;controls();if(button){button.classList.remove('is-loading');button.removeAttribute('aria-busy');if(!button.classList.contains('failed'))button.textContent=id==='google-login'?'Continuar com Google':id==='cloud-save'?(dirty?'Salvar novas alterações':'✓ Salvo na nuvem'):id==='send-code'?'Reenviar link':id==='cloud-load'?'Carregar nuvem':'Sair';}}
  }
  function show(data){state={tasks:data.tasks.map(t=>({...t})),notes:data.notes};render();el('notes').value=state.notes;}
  async function load(){const t=await token();const rows=await request('/rest/v1/user_data?select=payload,revision&user_id=eq.'+encodeURIComponent(session.user.id),undefined,t);if(!Array.isArray(rows))throw Error('Resposta inesperada do banco.');let data={tasks:[],notes:''};if(rows.length){if(!valid(rows[0].payload))throw Error('Dados incompatíveis. A cópia local foi preservada.');data=rows[0].payload;revision=rows[0].revision;}else revision=0;show(data);loaded=true;dirty=false;localWrite();status('✓ Dados carregados da nuvem. '+session.user.email,'success');}
+ el('google-login').onclick=()=>run(async()=>{
+  if(!client)throw Error('A conexão com o Supabase ainda não está configurada.');
+  const settings=await request('/auth/v1/settings');
+  if(!settings?.external?.google)throw Error('O login Google ainda precisa ser ativado em Supabase → Authentication → Sign In / Providers → Google. Configure o Client ID e o Client Secret do Google Cloud.');
+  const {data,error}=await client.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname,skipBrowserRedirect:true,queryParams:{prompt:'select_account'}}});
+  if(error)throw error;
+  if(!data.url)throw Error('Não foi possível abrir o login Google. Tente novamente.');
+  status('Abrindo o Google. Escolha sua conta para continuar.','loading');
+  location.assign(data.url);
+ },'google-login','Abrindo Google…');
  el('send-code').onclick=()=>run(async()=>{if(!el('email').reportValidity())return;await request('/auth/v1/otp?redirect_to='+encodeURIComponent(location.origin+location.pathname),{email:el('email').value.trim(),create_user:authMode==='signup'});status('Link solicitado! Você ainda não está conectado. Abra o link recebido no e-mail para entrar. Confira também o spam.','success');},'send-code','Enviando link…');
  el('verify').onclick=()=>run(async()=>{const code=el('code').value.trim();if(!/^\d{6,10}$/.test(code))throw Error('Digite o código numérico recebido no e-mail.');const result=await request('/auth/v1/verify',{email:el('email').value.trim(),token:code,type:'email'});if(!result.access_token||!result.user)throw Error('Não foi possível entrar.');const {data:verified,error:verifyError}=await client.auth.setSession({access_token:result.access_token,refresh_token:result.refresh_token});if(verifyError)throw verifyError;session=verified.session;activeKey='meu-ritmo-cloud-'+session.user.id;el('code').value='';show({tasks:[],notes:''});status('Conectado. Carregando dados…');try{await load();}catch(e){show({tasks:[],notes:''});throw e;}});
  el('cloud-save').onclick=()=>run(async()=>{const snapshot=JSON.parse(JSON.stringify(state));const t=await token();const next=await request('/rest/v1/rpc/save_my_data',{document:snapshot,expected_revision:revision},t);if(!Number.isInteger(next)||next<1)throw Error('O banco não confirmou o salvamento. Tente carregar a nuvem antes de salvar novamente.');revision=next;dirty=JSON.stringify(state)!==JSON.stringify(snapshot);el('cloud-save').classList.add('saved');status(dirty?'Cópia salva. Há novas alterações locais; salve novamente.':'✓ Dados salvos na nuvem às '+new Intl.DateTimeFormat('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date())+'.','success');},'cloud-save','Salvando na nuvem…');
@@ -83,7 +93,7 @@
  const access=callback.get('access_token'),refresh=callback.get('refresh_token'),callbackError=callback.has('error');
  if(access||callbackError)history.replaceState(null,'',location.pathname+location.search);
  run(async()=>{
-  if(callbackError)throw Error('Link inválido ou expirado. Solicite um novo link de acesso.');
+  if(callbackError)throw Error('O acesso não foi concluído ou expirou. Tente novamente com Google ou solicite outro link de e-mail.');
   let restored;
   if(access){
    if(!refresh)throw Error('Link de acesso inválido. Solicite outro.');
