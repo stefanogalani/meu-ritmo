@@ -120,3 +120,11 @@ Reabrir/concluir novamente a mesma ocorrência não duplica a próxima. Apagar o
 Os dados continuam no documento existente do Supabase; nenhuma migração SQL é necessária. Backups anteriores sem lixeira/repetição continuam válidos.
 
 Teste: `NODE_PATH=/tmp/meu-ritmo-tests/node_modules node tests/trash-repeat.cjs`, com o servidor local de testes em execução.
+
+## Atualização sem mistura de versões
+
+Os scripts app.js, cloud.js e pwa.js usam o parâmetro de versão `?v=7` no HTML e são precacheados com a mesma URL no service worker. Sempre que modificar arquivos do shell, atualize também esse identificador de versão nos scripts do HTML e na lista SHELL de sw.js, junto da versão CACHE. Isso evita que HTML novo use JavaScript antigo de outro cache.
+
+**Verificar atualização** mostra progresso imediatamente, bloqueia cliques repetidos e encerra a espera após 12 segundos quando o navegador/rede não responde. A ativação continua exigindo ação explícita e ausência de alterações pendentes. Abas com uma versão já ativada em outra aba também podem recarregar com segurança. O parâmetro temporário `atualizar` é removido ao aplicar a atualização, mantendo a navegação normal compatível com o cache offline.
+
+Teste de migração real de cache: `NODE_PATH=/tmp/meu-ritmo-tests/node_modules node tests/update.cjs`. Esse teste inicia seu próprio servidor temporário na porta 8767 e não usa contas reais.

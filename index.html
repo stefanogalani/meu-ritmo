@@ -44,9 +44,9 @@ select{font:inherit;color:#173a33;background:#f7f7f0;border:1px solid #e0e4d9;bo
 <dialog id="edit-dialog"><form id="edit-form"><h2>Editar tarefa</h2><label>Tarefa<input id="edit-text" maxlength="200" required></label><div class="task-options"><label>Prazo<input id="edit-due" type="date"></label><label>Prioridade<select id="edit-priority"><option value="normal">Normal</option><option value="high">Alta</option><option value="low">Baixa</option></select></label></div><label class="category-field" for="edit-category">Categoria<input id="edit-category" list="category-options" maxlength="40" placeholder="Pessoal, Trabalho, Estudos…"></label><label class="category-field" for="edit-repeat">Repetição<select id="edit-repeat"><option value="none">Não repetir</option><option value="daily">Diariamente</option><option value="weekly">Semanalmente</option><option value="monthly">Mensalmente</option></select></label><p class="field-hint">A próxima ocorrência nasce ao concluir esta tarefa. Alterar a repetição não modifica ocorrências já criadas.</p><label class="category-field" for="edit-subtasks">Subtarefas · um passo por linha<textarea id="edit-subtasks" maxlength="4000"></textarea></label><p class="field-hint">Até 30 passos. Renomear um passo o deixa pendente. Concluir todos os passos conclui a tarefa.</p><p id="edit-error" role="alert"></p><div class="row dialog-actions"><button type="button" id="edit-cancel" class="secondary">Cancelar</button><button type="submit">Salvar alterações</button></div></form></dialog>
 <dialog id="install-dialog"><h2>Leve o Meu Ritmo com você</h2><p id="install-instructions">No Android ou computador, abra o menu do navegador e procure Instalar app. No iPhone/iPad, abra no Safari e use Compartilhar → Adicionar à Tela de Início.</p><p>Abra o app uma vez com internet para preparar o modo offline. Dados pendentes serão enviados ao reconectar.</p><button id="install-close">Entendi</button></dialog>
 <datalist id="category-options"></datalist>
-<script src="app.js"></script>
+<script src="app.js?v=7"></script>
 <script src="cloud-config.js"></script>
 <script src="vendor/supabase-2.118.0.js"></script>
-<script src="cloud.js"></script>
-<script src="pwa.js"></script>
+<script src="cloud.js?v=7"></script>
+<script src="pwa.js?v=7"></script>
 </body></html>
