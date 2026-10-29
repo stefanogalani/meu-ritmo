@@ -82,3 +82,13 @@ NODE_PATH=/tmp/meu-ritmo-tests/node_modules node tests/autosync.cjs
 ```
 
 Para Chromium já instalado, defina `CHROMIUM_PATH`. A suíte de sincronização simula o Supabase e não usa credenciais reais; não substitui uma validação do banco e das regras RLS no projeto real.
+
+## Categorias e subtarefas
+
+No formulário de criação, escolha uma categoria sugerida ou digite uma própria (até 40 caracteres). O filtro de categoria combina com status, prioridade e busca. Nomes de categoria são agrupados ignorando acentos e maiúsculas. A busca inclui título, categoria e texto das subtarefas.
+
+Abra **Dividir em subtarefas** e escreva um passo por linha (até 30 passos de 120 caracteres por tarefa). O checklist mostra progresso. Concluir todos os passos conclui a tarefa; reabrir um passo reabre a tarefa. Marcar/desmarcar a tarefa principal aplica o mesmo estado a todos os passos.
+
+Em **Editar**, você pode mudar a categoria e a lista de passos. Passos de texto igual preservam seu progresso ao reordenar; um passo renomeado é considerado novo e fica pendente. Campos opcionais mantêm compatibilidade com tarefas e backups anteriores. Tudo sincroniza no documento existente do Supabase, sem nova migração SQL.
+
+Teste adicional: `NODE_PATH=/tmp/meu-ritmo-tests/node_modules node tests/organization.cjs` (com o mesmo servidor e dependências descritos acima).
