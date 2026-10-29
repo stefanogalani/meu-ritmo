@@ -102,3 +102,21 @@ Use **Focar** em uma tarefa ou escolha uma tarefa no cronômetro antes de inicia
 Cada sessão concluída pode incluir taskId e um retrato do título da tarefa ao iniciar. O histórico guarda essa identificação mesmo que a tarefa seja renomeada/excluída, e apresenta os minutos por tarefa nos últimos sete dias. A lista de tarefas mostra também o total de minutos de foco registrado para cada tarefa. Sessões antigas sem vínculo são tratadas como foco livre. Os campos opcionais cabem no schema existente, sem migração SQL.
 
 Teste: `NODE_PATH=/tmp/meu-ritmo-tests/node_modules node tests/my-day.cjs` (com o servidor de testes em execução).
+
+## Desfazer e lixeira
+
+Excluir uma tarefa, ou usar **Limpar concluídas**, move os itens para **Lixeira**. O aviso **Desfazer** restaura a última exclusão desta sessão. Recarregar ou trocar de conta encerra esse atalho, mas os itens continuam na lixeira, sincronizada com a conta e incluída nos backups.
+
+Na lixeira, busque pelo título/categoria, restaure ou exclua definitivamente um item. **Esvaziar lixeira** exige confirmação. Não há expiração automática. O limite de 5.000 tarefas inclui itens ativos e na lixeira. Restaurar preserva prazos, subtarefas, recorrência e identificadores; não cria uma nova ocorrência. Uma prioridade do dia só é restaurada como prioridade se ainda houver espaço nas três escolhas. Históricos de foco são independentes e não são apagados ao excluir tarefas.
+
+## Repetições
+
+Na criação ou em Editar, escolha **Diariamente**, **Semanalmente** ou **Mensalmente**. Sem prazo informado, a primeira data é hoje. Ao concluir a tarefa (também pelo último passo ou por Meu dia), surge uma única próxima ocorrência pendente, com título, categoria, prioridade e passos copiados; os passos ficam desmarcados e a prioridade do dia não é copiada.
+
+A próxima data segue a data planejada, pulando ciclos vencidos até uma data futura. Não há criação agendada no servidor nem acumulação de tarefas enquanto uma ocorrência segue pendente. Em meses curtos, a repetição mensal usa o último dia possível e depois retorna ao dia de origem (31/01 → 28/02 → 31/03; considera anos bissextos).
+
+Reabrir/concluir novamente a mesma ocorrência não duplica a próxima. Apagar ou restaurar também não cria outra. Ocorrências já geradas não são alteradas retroativamente ao editar a tarefa anterior; para parar a série, edite a próxima tarefa pendente e escolha **Não repetir**. Restaurar uma tarefa concluída também não recria uma ocorrência seguinte que tenha sido excluída deliberadamente.
+
+Os dados continuam no documento existente do Supabase; nenhuma migração SQL é necessária. Backups anteriores sem lixeira/repetição continuam válidos.
+
+Teste: `NODE_PATH=/tmp/meu-ritmo-tests/node_modules node tests/trash-repeat.cjs`, com o servidor local de testes em execução.
