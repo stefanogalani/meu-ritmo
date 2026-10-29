@@ -92,3 +92,13 @@ Abra **Dividir em subtarefas** e escreva um passo por linha (até 30 passos de 1
 Em **Editar**, você pode mudar a categoria e a lista de passos. Passos de texto igual preservam seu progresso ao reordenar; um passo renomeado é considerado novo e fica pendente. Campos opcionais mantêm compatibilidade com tarefas e backups anteriores. Tudo sincroniza no documento existente do Supabase, sem nova migração SQL.
 
 Teste adicional: `NODE_PATH=/tmp/meu-ritmo-tests/node_modules node tests/organization.cjs` (com o mesmo servidor e dependências descritos acima).
+
+## Meu dia e foco por tarefa
+
+A visão **Meu dia** reúne tarefas pendentes com prazo hoje, atrasadas e até três prioridades escolhidas pelo botão **☆ Hoje**. As listas resumem até quatro tarefas por grupo; use Ver tarefas de hoje/Ver atrasadas para abrir o filtro completo. Prioridades concluídas continuam contando nos três espaços até serem removidas. As escolhas valem para a data local do navegador, e o painel se renova quando o dia muda.
+
+Use **Focar** em uma tarefa ou escolha uma tarefa no cronômetro antes de iniciar o ciclo. A escolha fica vinculada ao ciclo iniciado e é preservada ao atualizar a mesma aba. Para mudar de tarefa durante um ciclo, confirme o reinício; ciclos incompletos não geram crédito. Focar novamente na mesma tarefa retoma um ciclo pausado. **Foco livre** continua disponível.
+
+Cada sessão concluída pode incluir taskId e um retrato do título da tarefa ao iniciar. O histórico guarda essa identificação mesmo que a tarefa seja renomeada/excluída, e apresenta os minutos por tarefa nos últimos sete dias. A lista de tarefas mostra também o total de minutos de foco registrado para cada tarefa. Sessões antigas sem vínculo são tratadas como foco livre. Os campos opcionais cabem no schema existente, sem migração SQL.
+
+Teste: `NODE_PATH=/tmp/meu-ritmo-tests/node_modules node tests/my-day.cjs` (com o servidor de testes em execução).

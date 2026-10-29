@@ -1,5 +1,5 @@
 'use strict';
-const CACHE='meu-ritmo-shell-v4';
+const CACHE='meu-ritmo-shell-v5';
 const SHELL=['./','index.html','app.js','cloud.js','cloud-config.js','pwa.js','manifest.webmanifest','vendor/supabase-2.118.0.js','assets/meu-ritmo-logo.png','assets/app-icon.svg'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)));});
 // Activation is either after old tabs close or an explicit, safe user action.
