@@ -1,8 +1,9 @@
 'use strict';
-const CACHE='meu-ritmo-shell-v2';
+const CACHE='meu-ritmo-shell-v3';
 const SHELL=['./','index.html','app.js','cloud.js','cloud-config.js','pwa.js','manifest.webmanifest','vendor/supabase-2.118.0.js','assets/meu-ritmo-logo.png','assets/app-icon.svg'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)));});
-// Updates activate on next visit after all existing app tabs have been closed.
+// Activation is either after old tabs close or an explicit, safe user action.
+self.addEventListener('message',event=>{if(event.data?.type==='ACTIVATE_UPDATE')self.skipWaiting();});
 self.addEventListener('activate',event=>{event.waitUntil((async()=>{for(const key of await caches.keys())if(key.startsWith('meu-ritmo-shell-')&&key!==CACHE)await caches.delete(key);await self.clients.claim();})());});
 self.addEventListener('fetch',event=>{
  const url=new URL(event.request.url);

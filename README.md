@@ -60,7 +60,7 @@ No Chrome/Edge e Android, use **Instalar app**, quando o navegador disponibiliza
 
 O service worker guarda somente arquivos estáticos do app, nunca requisições do Supabase ou respostas de autenticação. Os rascunhos continuam no armazenamento local e sincronizam ao reconectar; a sessão pode precisar ser renovada com internet. O app instalado usa o armazenamento fornecido pelo navegador/plataforma, que pode diferir de outro navegador.
 
-**Atualizações:** sempre altere a versão `CACHE` de `sw.js` ao modificar arquivos do shell. A atualização preparada entra em vigor ao fechar todas as abas/janelas do app e abrir novamente; há um aviso quando uma versão nova fica pronta. Não ative uma versão nova à força enquanto o usuário edita.
+**Atualizações:** sempre altere a versão `CACHE` de `sw.js` ao modificar arquivos do shell. Use **Verificar atualização** no topo. Uma atualização preparada oferece **Atualizar agora**, que aguarda não haver operações ou alterações pendentes nesta aba antes de ativar e recarregar. Outras abas não são recarregadas à força. Fechar todas as abas/janelas e abrir novamente também ativa uma atualização preparada.
 
 ## Testes de navegador
 

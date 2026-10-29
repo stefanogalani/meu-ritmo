@@ -2,6 +2,8 @@
 (() => {
  const el=id=>document.getElementById(id), config=window.MEU_RITMO_CLOUD||{};
  let session=null, revision=0, busy=false, loaded=false, dirty=false, activeKey='meu-ritmo-v1', authMode='login', localMode=false;
+ let localSaved=true;
+ window.meuRitmoCanUpdate=()=>!busy&&(!dirty||(!session&&localSaved));
  let syncTimer=null,retryTimer=null,conflict=false,editCount=0,draftKey=null,retryDelay=5000;
  const writer=crypto.randomUUID();
  function pending(){if(!session)return [];const prefix=activeKey+':pending:';const found=[];try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith(prefix)){const d=JSON.parse(localStorage.getItem(k));if(d&&valid(d.payload)&&Number.isInteger(d.revision))found.push({key:k,...d});}}}catch{}return found.sort((a,b)=>b.time-a.time);}
@@ -40,7 +42,7 @@
  for(const id of ['cloud-save','cloud-load','local-import'])el(id).disabled=busy||!session||!loaded;el('cloud-load').disabled=busy||!session;el('logout').disabled=busy||!session;el('verify').disabled=busy||!!session;el('send-code').disabled=busy||!!session;}
  function localWrite(){try{localStorage.setItem(activeKey,JSON.stringify(state));return true;}catch{status('Não foi possível guardar a cópia local. Exporte um backup.');return false;}}
  // O modo conectado usa um cache separado por usuário; o conteúdo local antigo é preservado.
- save=()=>{dirty=true;editCount++;const ok=session?persistDraft():localWrite();if(session){el('cloud-save').textContent='Sincronizar agora';el('cloud-save').classList.remove('saved','failed');recovery();schedule();}return ok;};
+ save=()=>{dirty=true;editCount++;const ok=session?persistDraft():localWrite();localSaved=ok;if(session){el('cloud-save').textContent='Sincronizar agora';el('cloud-save').classList.remove('saved','failed');recovery();schedule();}return ok;};
  async function request(path,body,token){const response=await fetch(config.url+path,{signal:AbortSignal.timeout(20000),method:body===undefined?'GET':'POST',headers:{apikey:config.publicKey,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})});const data=await response.json().catch(()=>null);if(!response.ok){
  const code=typeof data?.code==='string'?data.code:typeof data?.error_code==='string'?data.error_code:'';
  const messages={
