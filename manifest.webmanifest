@@ -1,0 +1,26 @@
+{
+  "id": "./",
+  "name": "Meu Ritmo",
+  "short_name": "Meu Ritmo",
+  "description": "Tarefas, foco e notas no seu ritmo.",
+  "lang": "pt-BR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f2eb",
+  "theme_color": "#173f36",
+  "icons": [
+    {
+      "src": "assets/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/meu-ritmo-logo.png",
+      "sizes": "1280x1280",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

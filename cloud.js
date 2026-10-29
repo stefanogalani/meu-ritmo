@@ -79,7 +79,7 @@
  try{await fn();}catch(e){if(session&&dirty){retryDelay=Math.min(60000,retryDelay*2);if(e.httpStatus===409){conflict=true;indicator('Conflito · cópia local preservada','error');recovery();}else indicator('Não sincronizado · cópia local pendente','error');}status(e.name==='TimeoutError'?'O serviço demorou para responder. O salvamento não foi confirmado; tente carregar a nuvem antes de reenviar.':e.message==='Failed to fetch'?'Sem conexão com o serviço. Nada foi confirmado na nuvem. Verifique sua internet e tente novamente.':e.message,'error');if(button){button.classList.add('failed');button.textContent=id==='cloud-save'?'Falha · Tentar salvar':id==='send-code'?'Tentar enviar novamente':'Tentar novamente';}}
  finally{busy=false;controls();if(button){button.classList.remove('is-loading');button.removeAttribute('aria-busy');if(!button.classList.contains('failed'))button.textContent=id==='google-login'?'Continuar com Google':id==='cloud-save'?(dirty?'Sincronizar agora':'✓ Sincronizado'):id==='send-code'?'Reenviar link':id==='cloud-load'?'Carregar nuvem':'Sair';}}
  }
- function show(data){state={tasks:data.tasks.map(t=>({...t})),notes:data.notes};render();el('notes').value=state.notes;}
+ function show(data){state=normalize(data);render();el('notes').value=state.notes;window.setTimerScope(activeKey,loaded);}
  async function load(){
  const owner=session.user.id,stamp=editCount;const t=await token();const rows=await request('/rest/v1/user_data?select=payload,revision&user_id=eq.'+encodeURIComponent(owner),undefined,t);
  if(!session||session.user.id!==owner)return;if(!Array.isArray(rows))throw Error('Resposta inesperada do banco.');
@@ -108,7 +108,7 @@
  el('cloud-save').onclick=()=>{if(conflict){status('Resolva o conflito no painel de recuperação antes de sincronizar.','error');return;}syncNow();};
  el('cloud-load').onclick=()=>run(async()=>{if(dirty){status('Sua cópia pendente será preservada durante a verificação da nuvem.');}clearTimeout(syncTimer);await load();},'cloud-load','Carregando nuvem…');
  el('local-import').onclick=()=>{try{const old=JSON.parse(localStorage.getItem('meu-ritmo-v1')||'null');if(!valid(old))throw Error();if(!confirm('Substituir a tela atual pelos seus dados do modo local? Depois clique em Salvar na nuvem.'))return;show(old);save();}catch{status('Não há dados locais válidos neste navegador. Você também pode importar um backup JSON.');}};
- function clearAccount(){clearTimeout(syncTimer);clearTimeout(retryTimer);conflict=false;draftKey=null;session=null;localMode=false;loaded=false;dirty=false;revision=0;activeKey='meu-ritmo-v1';let old;try{old=JSON.parse(localStorage.getItem(activeKey));}catch{}show(valid(old)?old:{tasks:[],notes:''});el('recovery').hidden=true;indicator('Modo local');controls();}
+ function clearAccount(){clearTimeout(syncTimer);clearTimeout(retryTimer);conflict=false;draftKey=null;session=null;localMode=false;loaded=false;dirty=false;revision=0;activeKey='meu-ritmo-v1';let old;try{old=JSON.parse(localStorage.getItem(activeKey));}catch{}show(valid(old)?old:{tasks:[],notes:''});window.setTimerScope(activeKey,true);el('recovery').hidden=true;indicator('Modo local');controls();}
  el('logout').onclick=()=>run(async()=>{if(dirty&&!confirm('Há alterações sem enviar à nuvem. Exporte uma cópia ou salve antes de sair. Sair mesmo assim?')){status('Saída cancelada. Suas alterações continuam neste navegador.');return;}const {error}=await client.auth.signOut({scope:'local'});if(error)throw error;clearAccount();status('Você saiu com segurança deste navegador.');},'logout','Saindo…');
  if(client)client.auth.onAuthStateChange((event,next)=>{
   // Não faça chamadas assíncronas ao Auth dentro deste callback (lock do SDK).
@@ -137,7 +137,7 @@
   if(!restored){status('Entre com seu e-mail. Você continuará conectado neste navegador até sair.');return;}
   session=restored;activeKey='meu-ritmo-cloud-'+session.user.id;
   show({tasks:[],notes:''});
-  try{await load();}catch(error){const drafts=pending();let cached;try{cached=JSON.parse(localStorage.getItem(activeKey));}catch{}if(drafts.length){const d=drafts[0];show(d.payload);revision=d.revision;draftKey=d.key;dirty=true;}else if(valid(cached))show(cached);recovery();indicator('Offline ou falha de conexão · cópia local disponível','error');throw error;}
+  try{await load();}catch(error){const drafts=pending();let cached;try{cached=JSON.parse(localStorage.getItem(activeKey));}catch{}if(drafts.length){const d=drafts[0];show(d.payload);revision=d.revision;draftKey=d.key;dirty=true;}else if(valid(cached))show(cached);window.setTimerScope(activeKey,true);recovery();indicator('Offline ou falha de conexão · cópia local disponível','error');throw error;}
 
  },undefined,'Recuperando sua sessão…');
 })();
