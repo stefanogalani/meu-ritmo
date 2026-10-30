@@ -123,7 +123,7 @@ Teste: `NODE_PATH=/tmp/meu-ritmo-tests/node_modules node tests/trash-repeat.cjs`
 
 ## Atualização sem mistura de versões
 
-Os scripts preferences.js, app.js, cloud.js e pwa.js usam o parâmetro de versão `?v=8` no HTML e são precacheados com a mesma URL no service worker. Sempre que modificar arquivos do shell, atualize também esse identificador de versão nos scripts do HTML e na lista SHELL de sw.js, junto da versão CACHE. Isso evita que HTML novo use JavaScript antigo de outro cache.
+Os scripts preferences.js, app.js, cloud.js e pwa.js usam o parâmetro de versão `?v=9` no HTML e são precacheados com a mesma URL no service worker. Sempre que modificar arquivos do shell, atualize também esse identificador de versão nos scripts do HTML e na lista SHELL de sw.js, junto da versão CACHE. Isso evita que HTML novo use JavaScript antigo de outro cache.
 
 **Verificar atualização** mostra progresso imediatamente, bloqueia cliques repetidos e encerra a espera após 12 segundos quando o navegador/rede não responde. A ativação continua exigindo ação explícita e ausência de alterações pendentes. Abas com uma versão já ativada em outra aba também podem recarregar com segurança. O parâmetro temporário `atualizar` é removido ao aplicar a atualização, mantendo a navegação normal compatível com o cache offline.
 
@@ -142,3 +142,28 @@ A revisão usa semanas de segunda a domingo no fuso local do navegador. Navegue 
 Tarefas antigas concluídas sem data não recebem uma data estimada. Sessões de foco antigas continuam contando pelas datas já registradas. A lista de pendências representa tarefas ainda abertas agora, sem prazo ou com prazo até a semana consultada; não tenta reconstruir um estado histórico que o app não registrou. O painel mostra até dez itens por lista; a exportação inclui todos os itens do período.
 
 Teste: `NODE_PATH=/tmp/meu-ritmo-tests/node_modules node tests/comfort.cjs` (com o servidor local na porta 8765).
+
+
+## Confiabilidade e interface · versão 9
+
+- **Modo local com várias abas:** cada aba guarda um rascunho antes de gravar a versão principal, usando Web Locks para coordenar as gravações. Abas sem edições pendentes acompanham as alterações locais. Edições concorrentes ficam em **Cópias locais preservadas**, onde podem ser exportadas, recuperadas ou descartadas explicitamente. Recuperar preserva também a versão principal anterior. Recarregar a mesma aba recupera seu rascunho automaticamente apenas quando a origem ainda é compatível. Navegadores sem Web Locks preservam o rascunho e pedem exportação, sem substituir a versão principal sem proteção. Limites de armazenamento do navegador continuam se aplicando.
+- **Limite de dados:** novas importações e sincronizações usam um teto conservador de 1,9 MB, considerando UTF-8, espaços do jsonb e expansão de números. O banco continua limitado a 2 MB. Cópias antigas maiores continuam legíveis e exportáveis. Edições que excedem o limite são preservadas localmente quando há espaço, mas não são enviadas; o app pede backup e redução dos dados.
+- **Conflitos na nuvem:** Compare com a nuvem para consultar tarefas diferentes e o conteúdo das notas. A combinação só é oferecida quando há uma origem conhecida e as mudanças são independentes por registro. Notas diferentes nos dois lados, edições diferentes da mesma tarefa, duplicidades ou uma tarefa simultaneamente ativa e na lixeira exigem resolução manual. Cópias antigas sem origem continuam exportáveis. A gravação combinada mantém a verificação de revisão do servidor; não há sobrescrita forçada.
+- **Retorno ao app:** uma aba conectada e sem alterações verifica a revisão remota ao receber foco ou voltar a ficar visível, com intervalo mínimo de cinco segundos. Alterações pendentes nunca são substituídas por essa verificação.
+- **Tela principal:** criação rápida mostra o título, com Mais opções para prazo, prioridade, categoria, recorrência e subtarefas. Conta, revisão e histórico ficam recolhidos; erros de sincronização abrem os controles de conta. A busca atualiza apenas a lista de tarefas e os totais de foco são calculados em uma passagem pelo histórico.
+
+## Testes automatizados em Windows, macOS e Linux
+
+Com Node.js 22 ou superior:
+
+```sh
+npm ci
+npx playwright install chromium
+npm test
+```
+
+O runner inicia e encerra seu próprio servidor na porta 8765. O teste de atualização usa também a porta 8767. Não execute outro servidor nessas portas durante a suíte. Use npm start para abrir o app localmente fora dos testes. CHROMIUM_PATH pode apontar para um Chromium existente.
+
+O GitHub Actions executa a suíte em push e pull request, incluindo downloads nativos. Os testes usam serviços de autenticação simulados e não acessam contas reais. Não comprovam a configuração de produção, o provedor OAuth ou a aplicação efetiva de RLS.
+
+Em ambientes gerenciados que cancelam downloads, TEST_BLOB_EXPORT=1 permite verificar o conteúdo real do Blob exportado. Esse modo é explicitamente registrado no log e não afirma que o download nativo funcionou; não é usado pelo CI.

@@ -1,0 +1,12 @@
+{
+  "name": "meu-ritmo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "node tests/run.cjs",
+    "start": "node tests/server.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}
