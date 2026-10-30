@@ -18,6 +18,8 @@ const {chromium}=require('playwright'),fs=require('node:fs'),path=require('node:
   // Two edits of the same notes field must not be merged automatically.
   const d=await page();await b.locator('#notes').fill('Notas B');await b.waitForFunction(()=>document.getElementById('sync-state').textContent.includes('Sincronizado às'));
   await d.locator('#notes').fill('Notas D');await d.waitForFunction(()=>document.getElementById('sync-state').textContent.includes('Conflito'));await d.locator('#compare-cloud').click();await d.locator('#compare-dialog').waitFor({state:'visible'});assert.match(await d.locator('#compare-content').innerText(),/Notas alteradas nas duas cópias/);await d.locator('#compare-close').click();assert(await d.locator('#merge-cloud').isHidden());assert.equal(payload.notes,'Notas B');
-  assert.deepEqual(errors,[]);await c.close();console.log('PASS: independent cloud edits merge with revision guard, conflicting notes stay separate, clean tab refreshes on focus.');
+  // Reloading the cloud from the same writer must keep its durable draft.
+  await b.locator('#notes').fill('Rascunho da própria aba');await b.locator('#account-details').evaluate(el=>el.open=true);await b.locator('#cloud-load').click();await b.waitForFunction(()=>document.getElementById('sync-state').textContent.includes('Conflito'));assert(await b.evaluate(()=>Object.keys(localStorage).filter(key=>key.includes(':pending:')).some(key=>JSON.parse(localStorage.getItem(key)).payload.notes==='Rascunho da própria aba')),'manual cloud load must retain the current tab journal');
+  assert.deepEqual(errors,[]);await c.close();console.log('PASS: independent cloud edits merge with revision guard, conflicting notes stay separate, clean tab refreshes on focus, same-tab recovery preserves journal.');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
