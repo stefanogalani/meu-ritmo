@@ -18,7 +18,8 @@ const assert=require('assert'),fs=require('fs'),os=require('os'),path=require('p
   await page.locator('#check-update').click();assert(await page.locator('#update-notice').isHidden());
   for(const file of files)fs.cpSync(path.join(root,file),path.join(temp,file),{recursive:true});
   await page.goto('http://127.0.0.1:8767/?atualizar=8');await page.waitForFunction(async()=>!!(await navigator.serviceWorker.getRegistration()).waiting);
-  await page.locator('#check-update').click();assert(await page.locator('#apply-update').isVisible());assert.match(await page.locator('#update-text').innerText(),/nova versão/);
+  await page.locator('#check-update').click();
+  await page.locator('#apply-update').waitFor({state:'visible'});assert.match(await page.locator('#update-text').innerText(),/nova versão/);
   await page.locator('#try-local').click();await page.evaluate(()=>document.querySelectorAll('details').forEach(d=>d.open=true));assert.match(await page.locator('#tasks').innerText(),/Não apagar/);
   await page.evaluate(()=>window.meuRitmoCanUpdate=()=>false);await page.locator('#apply-update').click();assert.match(await page.locator('#update-text').innerText(),/pendentes/);
   await page.evaluate(()=>window.meuRitmoCanUpdate=()=>true);await page.locator('#apply-update').click();await page.waitForFunction(()=>!document.querySelector('#send-code').disabled);await page.locator('#try-local').click();await page.evaluate(()=>document.querySelectorAll('details').forEach(d=>d.open=true));assert.match(await page.locator('#tasks').innerText(),/Não apagar/);assert(await page.evaluate(async()=>{const keys=await caches.keys();return keys.includes('meu-ritmo-shell-v10')&&!keys.includes('meu-ritmo-shell-old-fixture');}));
