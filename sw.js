@@ -1,6 +1,6 @@
 'use strict';
-const CACHE='meu-ritmo-shell-v10';
-const SHELL=['./','index.html','data-safety.js?v=10','preferences.js?v=10','app.js?v=10','cloud.js?v=10','cloud-config.js','pwa.js?v=10','manifest.webmanifest','vendor/supabase-2.118.0.js','assets/meu-ritmo-logo.png','assets/app-icon.svg'];
+const CACHE='meu-ritmo-shell-v11';
+const SHELL=['./','index.html','data-safety.js?v=11','preferences.js?v=11','app.js?v=11','cloud.js?v=11','cloud-config.js?v=11','pwa.js?v=11','manifest.webmanifest','vendor/supabase-2.118.0.js','assets/meu-ritmo-logo.png','assets/app-icon.svg'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)));});
 // Activation is either after old tabs close or an explicit, safe user action.
 self.addEventListener('message',event=>{if(event.data?.type==='ACTIVATE_UPDATE')self.skipWaiting();});
