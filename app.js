@@ -85,6 +85,38 @@ function renderDay(){
 }
 function filterDay(value){$('search').value='';$('filter-priority').value='all';$('filter-category').value='all';$('filter-status').value=value;render();$('task-form').scrollIntoView({block:'start',behavior:'smooth'});}
 $('day-show-today').onclick=()=>filterDay('today');$('day-show-overdue').onclick=()=>filterDay('overdue');
+function openCalendarDialog(task){
+ const form=$('calendar-form');
+ form.reset();
+ $('calendar-task').textContent=task.text;
+ $('calendar-date').value=task.due||dayKey();
+ $('calendar-dialog').showModal();
+}
+$('calendar-cancel').onclick=()=>$('calendar-dialog').close();
+$('calendar-form').onsubmit=event=>{
+ event.preventDefault();
+ const date=$('calendar-date').value,time=$('calendar-time').value;
+ if(!validDay(date))return;
+ const url=new URL('https://calendar.google.com/calendar/r/eventedit');
+ url.searchParams.set('action','TEMPLATE');
+ url.searchParams.set('text',$('calendar-task').textContent);
+ if(time){
+  const start=new Date(date+'T'+time);
+  const end=new Date(start.getTime()+30*60*1000);
+  const stamp=value=>value.toISOString().replace(/[-:]|\.\d{3}/g,'');
+  const zone=Intl.DateTimeFormat().resolvedOptions().timeZone;
+  url.searchParams.set('dates',stamp(start)+'/'+stamp(end));
+  url.searchParams.set('stz',zone);
+  url.searchParams.set('etz',zone);
+ }else{
+  const next=new Date(date+'T00:00:00Z');
+  next.setUTCDate(next.getUTCDate()+1);
+  const end=next.toISOString().split('T')[0];
+  url.searchParams.set('dates',(date+'/'+end).replace(/-/g,''));
+ }
+ window.open(url.href,'_blank','noopener,noreferrer');
+ $('calendar-dialog').close();
+};
 let editing=null;
 function render(tasksOnly=false){
  if(!tasksOnly)categoryOptions();
@@ -110,7 +142,12 @@ function render(tasksOnly=false){
   const pin=document.createElement('button');pin.className='day-pin';pin.textContent=task.dayPriority===today?'★ Hoje':'☆ Hoje';pin.setAttribute('aria-pressed',String(task.dayPriority===today));pin.setAttribute('aria-label',(task.dayPriority===today?'Remover prioridade de hoje ':'Priorizar hoje ')+task.text);pin.onclick=()=>toggleDayPriority(task);actions.append(pin);
   if(!task.done){const focus=document.createElement('button');focus.className='focus-task-button';focus.textContent='Focar';focus.setAttribute('aria-label','Iniciar foco em '+task.text);focus.onclick=()=>focusOnTask(task);actions.append(focus);}
 const edit=document.createElement('button');edit.className='edit-task';edit.textContent='Editar';edit.setAttribute('aria-label','Editar '+task.text);edit.onclick=()=>{editing=task;$('edit-text').value=task.text;$('edit-due').value=task.due||'';$('edit-priority').value=task.priority||'normal';$('edit-category').value=task.category||'';$('edit-repeat').value=task.repeat||'none';$('edit-subtasks').value=(task.subtasks||[]).map(step=>step.text).join('\n');$('edit-error').textContent='';$('edit-dialog').showModal();};
-  const del=document.createElement('button');del.textContent='×';del.className='delete';del.setAttribute('aria-label','Excluir '+task.text);del.onclick=()=>trashTasks([task]);actions.append(edit,del);li.append(input,content,actions);list.append(li);
+  const del=document.createElement('button');del.textContent='×';del.className='delete';del.setAttribute('aria-label','Excluir '+task.text);del.onclick=()=>trashTasks([task]);const calendar=document.createElement('button');
+  calendar.className='edit-task';
+  calendar.textContent='Agendar';
+  calendar.setAttribute('aria-label','Agendar '+task.text);
+  calendar.onclick=()=>openCalendarDialog(task);
+  actions.append(calendar,edit,del);li.append(input,content,actions);list.append(li);
  }
  const n=state.tasks.length,done=state.tasks.filter(t=>t.done).length,percent=n?Math.round(done/n*100):0;
  $('empty').hidden=!!visible.length;$('empty').replaceChildren();if(!visible.length){const icon=document.createElement('b');icon.textContent=n?'⌕':'☀';$('empty').append(icon,document.createTextNode(n?'Nenhuma tarefa corresponde aos filtros.':'Seu espaço está livre. Comece com uma pequena intenção.'));}
