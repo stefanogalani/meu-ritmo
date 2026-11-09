@@ -15,3 +15,12 @@ O botão funciona para entrar ou criar conta. O envio de e-mails do Supabase nã
 Erros comuns: `redirect_uri_mismatch` significa que a URI de callback do Supabase no cliente Google não coincide; `access_denied` pode indicar usuário fora da lista de teste ou consentimento recusado. Retorno para um endereço errado exige revisar Site URL/Redirect URLs no Supabase.
 
 O app usa o cliente oficial Supabase, mantém a sessão no navegador e recupera o retorno OAuth. A segurança dos dados continua sendo aplicada pelo RLS do banco. A validação real requer configurar o cliente OAuth e completar o consentimento na conta Google.
+
+## Criar tarefas no Google Tasks
+
+1. No Google Cloud, habilite a **Google Tasks API**.
+2. Em **Google Auth Platform → Data Access**, configure o escopo `https://www.googleapis.com/auth/tasks`. Em **Audience**, adicione a conta que vai testar se o app estiver em Testing.
+3. Use um cliente OAuth do tipo **Web application**, com `https://stefanogalani.github.io` em **Authorized JavaScript origins**. Pode reutilizar o Client ID público já configurado para o login.
+4. Preencha `MEU_RITMO_GOOGLE_TASKS_CLIENT_ID` em `cloud-config.js` com o Client ID público e publique a configuração junto com uma nova versão do cache da PWA.
+
+Em **Agendar → Criar no Google Tasks**, selecione uma data e autorize a conta Google. A tarefa é criada na lista padrão, com título e data. O horário do formulário vale para eventos. A autorização do Tasks é separada do login e o token é usado apenas durante a requisição.

@@ -85,16 +85,87 @@ function renderDay(){
 }
 function filterDay(value){$('search').value='';$('filter-priority').value='all';$('filter-category').value='all';$('filter-status').value=value;render();$('task-form').scrollIntoView({block:'start',behavior:'smooth'});}
 $('day-show-today').onclick=()=>filterDay('today');$('day-show-overdue').onclick=()=>filterDay('overdue');
+const googleTaskButton=$('google-task-create');
+const googleTaskStatus=$('google-task-status');
+const googleTasksClientId=window.MEU_RITMO_GOOGLE_TASKS_CLIENT_ID;
+let googleIdentityLoading;
+let creatingGoogleTask=false;
+function prepareGoogleTasks(){
+ if(!googleTasksClientId)return;
+ googleTaskButton.hidden=false;
+ if(!googleIdentityLoading){
+  googleIdentityLoading=new Promise((resolve,reject)=>{
+   const script=document.createElement('script');
+   script.src='https://accounts.google.com/gsi/client';
+   script.onload=resolve;
+   script.onerror=()=>{script.remove();reject(new Error('Google Identity indisponível.'));};
+   document.head.append(script);
+  });
+ }
+ googleIdentityLoading.then(()=>{
+  if(!creatingGoogleTask)googleTaskButton.disabled=false;
+ }).catch(()=>{
+  googleIdentityLoading=null;
+  googleTaskStatus.textContent='O Google Tasks está indisponível. Confira a conexão e reabra esta janela.';
+ });
+}
+googleTaskButton.onclick=()=>{
+ const date=$('calendar-date');
+ if(creatingGoogleTask||!date.reportValidity()||!validDay(date.value))return;
+ const task={title:$('calendar-task').textContent,due:date.value+'T00:00:00.000Z'};
+ const finish=message=>{
+  creatingGoogleTask=false;
+  googleTaskButton.disabled=false;
+  googleTaskStatus.textContent=message;
+ };
+ creatingGoogleTask=true;
+ googleTaskButton.disabled=true;
+ googleTaskStatus.textContent='Autorize o acesso ao Google Tasks na janela do Google.';
+ try{
+  const client=google.accounts.oauth2.initTokenClient({
+   client_id:googleTasksClientId,
+   scope:'https://www.googleapis.com/auth/tasks',
+   include_granted_scopes:false,
+   error_callback:()=>finish('A autorização foi interrompida. Confira se o navegador permite janelas do Google e tente novamente.'),
+   callback:async response=>{
+    if(!response.access_token){finish('O Google não autorizou o acesso ao Tasks.');return;}
+    try{
+     const result=await fetch('https://tasks.googleapis.com/tasks/v1/lists/@default/tasks',{
+      method:'POST',
+      headers:{Authorization:'Bearer '+response.access_token,'Content-Type':'application/json'},
+      body:JSON.stringify(task),
+      signal:AbortSignal.timeout(15000)
+     });
+     if(!result.ok){
+      finish(result.status===403?'O Google recusou o acesso. Confira a autorização e a configuração da API do Google Tasks.':'O Google Tasks recusou a criação da tarefa.');
+      return;
+     }
+     finish('Tarefa criada na lista padrão do Google Tasks.');
+     googleTaskButton.disabled=true;
+    }catch{
+     finish('Não foi possível confirmar a criação. Confira o Google Tasks antes de tentar novamente.');
+    }
+   }
+  });
+  client.requestAccessToken({prompt:'select_account'});
+ }catch{
+  finish('Não foi possível abrir a autorização do Google Tasks.');
+ }
+};
+$('calendar-dialog').addEventListener('cancel',event=>{if(creatingGoogleTask)event.preventDefault();});
 function openCalendarDialog(task){
  const form=$('calendar-form');
  form.reset();
+ googleTaskStatus.textContent='';
+ prepareGoogleTasks();
  $('calendar-task').textContent=task.text;
  $('calendar-date').value=task.due||dayKey();
  $('calendar-dialog').showModal();
 }
-$('calendar-cancel').onclick=()=>$('calendar-dialog').close();
+$('calendar-cancel').onclick=()=>{if(!creatingGoogleTask)$('calendar-dialog').close();};
 $('calendar-form').onsubmit=event=>{
  event.preventDefault();
+ if(creatingGoogleTask)return;
  const date=$('calendar-date').value,time=$('calendar-time').value;
  if(!validDay(date))return;
  const url=new URL('https://calendar.google.com/calendar/r/eventedit');

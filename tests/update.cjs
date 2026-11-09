@@ -5,8 +5,8 @@ const assert=require('assert'),fs=require('fs'),os=require('os'),path=require('p
  const files=['data-safety.js','index.html','app.js','cloud.js','cloud-config.js','pwa.js','preferences.js','sw.js','manifest.webmanifest','assets','vendor'];
  for(const file of files)fs.cpSync(path.join(root,file),path.join(temp,file),{recursive:true});
  // Fixture: a previous shell with new markup but a cached script without the check handler.
- let html=fs.readFileSync(path.join(root,'index.html'),'utf8').replace(/(app|cloud|pwa|preferences)\.js\?v=10/g,'$1.js');
- let worker=fs.readFileSync(path.join(root,'sw.js'),'utf8').replace('meu-ritmo-shell-v10','meu-ritmo-shell-old-fixture').replace(/(app|cloud|pwa|preferences)\.js\?v=10/g,'$1.js');
+ let html=fs.readFileSync(path.join(root,'index.html'),'utf8').replace(/(app|cloud|pwa|preferences)\.js\?v=11/g,'$1.js');
+ let worker=fs.readFileSync(path.join(root,'sw.js'),'utf8').replace('meu-ritmo-shell-v11','meu-ritmo-shell-old-fixture').replace(/(app|cloud|pwa|preferences)\.js\?v=11/g,'$1.js');
  fs.writeFileSync(path.join(temp,'index.html'),html);fs.writeFileSync(path.join(temp,'sw.js'),worker);fs.writeFileSync(path.join(temp,'pwa.js'),"navigator.serviceWorker.register('./sw.js');");
  const server=spawn(process.execPath,[path.join(__dirname,'server.cjs'),temp,'8767'],{stdio:'ignore'});
  let browser;
@@ -22,7 +22,7 @@ const assert=require('assert'),fs=require('fs'),os=require('os'),path=require('p
   await page.locator('#apply-update').waitFor({state:'visible'});assert.match(await page.locator('#update-text').innerText(),/nova versão/);
   await page.locator('#try-local').click();await page.evaluate(()=>document.querySelectorAll('details').forEach(d=>d.open=true));assert.match(await page.locator('#tasks').innerText(),/Não apagar/);
   await page.evaluate(()=>window.meuRitmoCanUpdate=()=>false);await page.locator('#apply-update').click();assert.match(await page.locator('#update-text').innerText(),/pendentes/);
-  await page.evaluate(()=>window.meuRitmoCanUpdate=()=>true);await page.locator('#apply-update').click();await page.waitForFunction(()=>!document.querySelector('#send-code').disabled);await page.locator('#try-local').click();await page.evaluate(()=>document.querySelectorAll('details').forEach(d=>d.open=true));assert.match(await page.locator('#tasks').innerText(),/Não apagar/);assert(await page.evaluate(async()=>{const keys=await caches.keys();return keys.includes('meu-ritmo-shell-v10')&&!keys.includes('meu-ritmo-shell-old-fixture');}));
+  await page.evaluate(()=>window.meuRitmoCanUpdate=()=>true);await page.locator('#apply-update').click();await page.waitForFunction(()=>!document.querySelector('#send-code').disabled);await page.locator('#try-local').click();await page.evaluate(()=>document.querySelectorAll('details').forEach(d=>d.open=true));assert.match(await page.locator('#tasks').innerText(),/Não apagar/);assert(await page.evaluate(async()=>{const keys=await caches.keys();return keys.includes('meu-ritmo-shell-v11')&&!keys.includes('meu-ritmo-shell-old-fixture');}));
   await context.setOffline(true);await page.reload();await page.locator('#try-local').click();await page.evaluate(()=>document.querySelectorAll('details').forEach(d=>d.open=true));assert.match(await page.locator('#tasks').innerText(),/Não apagar/);await context.close();
   // Check immediate feedback and a bounded wait when the update API stalls.
   const mocked=await browser.newContext();await mocked.addInitScript(()=>{const reg={waiting:null,installing:null,update:()=>new Promise(resolve=>{window.finishUpdate=resolve;}),addEventListener(){}};Object.defineProperty(navigator,'serviceWorker',{configurable:true,value:{controller:null,register:async()=>reg,addEventListener(){}}});});
